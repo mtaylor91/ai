@@ -9,8 +9,8 @@ LEARNING_RATE = 1e-5
 
 
 class ActiveInference(nn.Module):
-    def __init__(self, energy_model, prediction_model):
-        self.energy_model = energy_model
+    def __init__(self, prediction_model):
+        super().__init__()
         self.prediction_model = prediction_model
 
     def forward(self, x, y, z, predicted=None):
@@ -18,39 +18,40 @@ class ActiveInference(nn.Module):
         if predicted is not None:
             x_predicted = predicted[0]
             y_predicted = predicted[1]
-            z_predicted = predicted[2]
             prediction_losses.append(((x_predicted - x) ** 2).mean())
             prediction_losses.append(((y_predicted - y) ** 2).mean())
-            prediction_losses.append(((z_predicted - z) ** 2).mean())
-        predictions = self.prediction_model(x, y, z)
-        energies = self.energy_model(predictions)
-        choice = torch.argmax(energies)
-        z_predicted = predictions[choice][2]
+        prediction = self.prediction_model(x, y, z)
+        z_predicted = prediction[2]
         loss = ((z_predicted - z) ** 2).mean()
         for prediction_loss in prediction_losses:
             loss += prediction_loss
-        return (predictions[choice], choice, energies, predictions, loss)
-
-
-class EnergyModel(nn.Module):
-    def __init__(self):
-        pass
-
-    def forward(self, x, y, z):
-        # TODO: return (n, x, y, z) predictions
-        pass
+        return (prediction, loss)
 
 
 class PredictionModel(nn.Module):
     def __init__(self):
+        super().__init__()
+
+    def forward(self, x, y, z):
+        # TODO: return (x, y, z) prediction
         pass
 
-    def forward(self, predictions):
-        # TODO: return n energies
+
+class VideoWatcher():
+    def __init__():
         pass
 
+    def initialize():
+        beliefs = torch.zeros(2048)
+        outputs = torch.zeros(4)
+        return (outputs, beliefs)
 
-def run_active_inference(energy_model, prediction_model, environment,
+    def interact(outputs):
+        inputs = torch.zeros((5, 512*512))
+        return (inputs, outputs)
+
+
+def run_active_inference(environment, prediction_model,
                          checkpoint=None,
                          max_epochs=None,
                          learning_rate=LEARNING_RATE,
@@ -63,7 +64,7 @@ def run_active_inference(energy_model, prediction_model, environment,
         state = {}
         epoch = 0
 
-    model = ActiveInference(energy_model, prediction_model)
+    model = ActiveInference(prediction_model)
     optim = torch.optim.Adam(lr=learning_rate, params=model.parameters())
     (y, z) = environment.initialize()
     prediction = None
@@ -100,6 +101,12 @@ def run_active_inference(energy_model, prediction_model, environment,
             print("Checkpoint written to {}".format(checkpoint), file=stderr)
 
 
-def train():
-    energy_model = EnergyModel()
+def train(checkpoint=None,
+          max_epochs=None,
+          learning_rate=LEARNING_RATE,
+          checkpoint_interval=CHECKPOINT_INTERVAL):
+    environment = VideoWatcher()
     prediction_model = PredictionModel()
+    run_active_inference(environment, prediction_model,
+                         checkpoint, max_epochs, learning_rate,
+                         checkpoint_interval)
